@@ -48,10 +48,22 @@ for i, contour in enumerate(rice_contours, start=1):
     box = np.int32(box)
     cv2.drawContours(result, [box], 0, (0, 255, 0), 2)
 
+
     # Print the measurement
     print(f"Grain {i}: {length_px:.2f} pixels")
 
 print("Total grains measured:", len(rice_contours))
+grid_image = result.copy()
+
+# Draw vertical lines every 10 pixels
+for x in range(0, 1020, 10):
+    cv2.line(grid_image, (x, 0), (x, 768), (255, 255, 255), 1)
+
+# Draw horizontal lines every 10 pixels
+for y in range(0, 768, 10):
+    cv2.line(grid_image, (0, y), (1020, y), (255, 255, 255), 1)
+
+cv2.imshow("Rice Image - Pixel Grid", grid_image)
 
 cv2.imshow("Measured Rice Grains", result)
 cv2.waitKey(0)
