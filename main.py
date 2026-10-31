@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 # 1. Load image
-image = cv2.imread("data/rice.jpg")
+image = cv2.imread("data/rice.jpeg")
 
 if image is None:
     raise FileNotFoundError("Could not load data/rice.jpg")
