@@ -59,22 +59,38 @@ for i, contour in enumerate(rice_contours, start=1):
     rect = cv2.minAreaRect(contour)
 
     width, height = rect[1]
-
     length_px = max(width, height)
 
     length_mm = length_px / pixels_per_mm
-
     grain_lengths_mm.append(length_mm)
 
     # Draw rotated rectangle
     box = cv2.boxPoints(rect)
     box = np.int32(box)
 
-    # Shift coordinates back to the original image
+    # Shift coordinates back to original image
     box[:, 1] += ROI_Y
 
+    # Draw green bounding box
     cv2.drawContours(
         result, [box], 0, (0, 255, 0), 2
+    )
+
+    # Get label position using shifted coordinates
+    x = int(np.min(box[:, 0]))
+    y = int(np.min(box[:, 1]))
+
+    label = f"{length_mm:.1f} mm"
+
+    cv2.putText(
+        result,
+        label,
+        (x, max(y - 8, 20)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.45,
+        (0, 0, 255),
+        1,
+        cv2.LINE_AA
     )
 
     print(f"Grain {i}: {length_mm:.2f} mm")
@@ -101,9 +117,81 @@ if grain_lengths_mm:
 else:
     print("No grains detected.")
 
-# 12. Display results
-cv2.imshow("RiceCheck Results", result)
+# 12. Rice Quality est
+if average_length < 5.5:
+    rice_type = "Short Grain"
+elif average_length <= 6.5:
+    rice_type = "Medium Grain"
+else:
+    rice_type = "Long Grain"
+
+print(f"Rice Category: {rice_type}")
+
+shortest_grain = min(grain_lengths_mm)
+longest_grain = max(grain_lengths_mm)
+
+
+short_count = sum(1 for x in grain_lengths_mm if x < 6)
+medium_count = sum(1 for x in grain_lengths_mm if 6 <= x <= 7.5)
+long_count = sum(1 for x in grain_lengths_mm if x > 7.5)
+
+# 13. Add results panel
+
+panel_height = 190
+panel = np.zeros((panel_height, 1020, 3), dtype=np.uint8)
+
+cv2.putText(panel, "RICECHECK RESULTS",
+            (20, 35), cv2.FONT_HERSHEY_SIMPLEX,
+            0.8, (255, 255, 255), 2)
+
+cv2.putText(panel, f"Total grains: {len(grain_lengths_mm)}",
+            (20, 75), cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (255, 255, 255), 1)
+
+cv2.putText(panel, f"Average length: {average_length:.2f} mm",
+            (20, 110), cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (255, 255, 255), 1)
+
+cv2.putText(panel, f"Shortest: {shortest_grain:.2f} mm",
+            (20, 145), cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (255, 255, 255), 1)
+
+cv2.putText(panel, f"Longest: {longest_grain:.2f} mm",
+            (20, 175), cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (255, 255, 255), 1)
+
+cv2.putText(panel, f"Category: {rice_type}",
+            (550, 75), cv2.FONT_HERSHEY_SIMPLEX,
+            0.8, (0, 255, 0), 2)
+
+cv2.putText(panel, f"Short: {short_count}  Medium: {medium_count}",
+            (550, 115), cv2.FONT_HERSHEY_SIMPLEX,
+            0.5, (255, 255, 255), 1)
+
+cv2.putText(panel, f"Long: {long_count}",
+            (550, 150), cv2.FONT_HERSHEY_SIMPLEX,
+            0.5, (255, 255, 255), 1)
+
+# Combine panel with original result image
+final_result = np.vstack((result, panel))
+
+cv2.imshow("RiceCheck - Final Results", final_result)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# 14. Display results
 cv2.imshow("ROI Mask", clean_mask)
+
+print(f"Shortest grain: {shortest_grain:.2f} mm")
+print(f"Longest grain: {longest_grain:.2f} mm")
+
+
+cv2.imshow("Rice Grain Measurements", result)
+
+print("\n--- Grain Distribution ---")
+print(f"Short grains: {short_count}")
+print(f"Medium grains: {medium_count}")
+print(f"Long grains: {long_count}")
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
